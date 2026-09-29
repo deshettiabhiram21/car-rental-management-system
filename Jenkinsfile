@@ -1,6 +1,15 @@
 pipeline {
     agent any
 
+    environment {
+        MYSQL_DATABASE = 'car_rental'
+        MYSQL_USER = 'caruser'
+
+        MYSQL_ROOT_PASSWORD = credentials('mysql-root-password')
+        MYSQL_PASSWORD = credentials('mysql-password')
+        FLASK_SECRET_KEY = credentials('flask-secret-key')
+    }
+
     stages {
 
         stage('Checkout') {

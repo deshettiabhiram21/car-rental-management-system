@@ -16,7 +16,7 @@ pipeline {
                     python3 --version
                     python3 -m venv venv
                     ./venv/bin/pip install --upgrade pip
-                    ./venv/bin/pip install -r "car rent/backend/requirements.txt"
+                    ./venv/bin/pip install -r "car-rent/backend/requirements.txt"
                 '''
             }
         }
@@ -29,20 +29,41 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Docker Build') {
             steps {
-                echo 'Car Rental application build completed successfully.'
+                sh '''
+                    echo "Building Docker containers..."
+                    docker compose build
+                '''
+            }
+        }
+
+        stage('Docker Deploy') {
+            steps {
+                sh '''
+                    echo "Starting MySQL and Car Rental application..."
+                    docker compose up -d
+                '''
+            }
+        }
+
+        stage('Container Check') {
+            steps {
+                sh '''
+                    echo "Checking running containers..."
+                    docker compose ps
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'Car Rental CI Pipeline completed successfully!'
+            echo 'Car Rental CI/CD Pipeline completed successfully!'
         }
 
         failure {
-            echo 'Car Rental CI Pipeline failed.'
+            echo 'Car Rental CI/CD Pipeline failed.'
         }
     }
 }

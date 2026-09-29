@@ -41,7 +41,7 @@ pipeline {
         stage('Docker Build') {
             steps {
                 sh '''
-                    echo "Building Docker containers..."
+                    echo "Building Docker image..."
                     docker compose build
                 '''
             }
@@ -61,6 +61,57 @@ pipeline {
                 sh '''
                     echo "Checking running containers..."
                     docker compose ps
+                '''
+            }
+        }
+
+        stage('Prepare Kubernetes Image') {
+            steps {
+                sh '''
+                    echo "Saving Docker image..."
+                    docker save car-rental-management-system-app:latest \
+                        -o /tmp/car-rental-app.tar
+
+                    echo "Loading image into Minikube..."
+                    sudo -n /usr/local/bin/jenkins-minikube-load-image
+
+                    echo "Kubernetes image loaded successfully."
+                '''
+            }
+        }
+
+        stage('Kubernetes Deploy') {
+            steps {
+                sh '''
+                    export KUBECONFIG=/var/lib/jenkins/kubeconfig
+
+                    echo "Applying MySQL Kubernetes resources..."
+                    kubectl apply -f k8s/mysql.yaml
+
+                    echo "Applying Car Rental application..."
+                    kubectl apply -f k8s/app.yaml
+
+                    echo "Restarting application deployment..."
+                    kubectl rollout restart deployment/car-rental-app
+
+                    echo "Waiting for application rollout..."
+                    kubectl rollout status deployment/car-rental-app --timeout=120s
+
+                    echo "Kubernetes deployment completed."
+                '''
+            }
+        }
+
+        stage('Kubernetes Check') {
+            steps {
+                sh '''
+                    export KUBECONFIG=/var/lib/jenkins/kubeconfig
+
+                    echo "===== PODS ====="
+                    kubectl get pods
+
+                    echo "===== SERVICES ====="
+                    kubectl get services
                 '''
             }
         }
